@@ -36,7 +36,7 @@ class GameLauncher:
         logging.info("Отображение доступных игр.")
         print("Доступные игры:")
         for game in self.games.keys():
-            print(f"- {game}")
+            print("- %s" %game)
 
     def launch_game(self, selected_game: str) -> None:
         """
@@ -45,7 +45,7 @@ class GameLauncher:
         Args:
             selected_game (str): Название выбранной игры.
         """
-        logging.info(f"Попытка запустить игру: {selected_game}")
+        logging.info("Попытка запустить игру: %s", selected_game)
         game_module_name = self.games.get(selected_game)
 
         if game_module_name:
@@ -55,12 +55,12 @@ class GameLauncher:
                 if function_name:
                     game_module_function = getattr(game_module, function_name)
                     game_module_function()
-                    logging.info(f"Игра '{selected_game}' успешно запущена.")
+                    logging.info("Игра %s успешно запущена.", selected_game)
                 else:
                     logging.error("Функция игры не найдена.")
                     print("Извините, функция игры не найдена.")
             except ImportError as e:
-                logging.error(f"Ошибка импорта модуля: {e}")
+                logging.error("Ошибка импорта модуля: %s", e)
                 print("Извините, произошла ошибка при запуске игры.")
         else:
             logging.warning("Попытка запустить несуществующую игру.")
