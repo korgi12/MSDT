@@ -31,6 +31,7 @@ from keras.api.preprocessing.sequence import TimeseriesGenerator
 from keras.models import Sequential
 from keras.layers import LSTM, Dense
 from plotly import graph_objs as go
+from sklearn.metrics import r2_score
 
 # pip install yfinance
 # start = datetime(2007, 2, 12)
@@ -56,15 +57,13 @@ tab_style = {
 
 
 def download_and_process_data(stock_name):
-    import yfinance
-    import pandas as pd
-    df = yfinance.download(stock_name, period='max')
+    df = yf.download(stock_name, period='max')
     df.reset_index(inplace=True)
     df['Date'] = pd.to_datetime(df['Date'])
     df.set_axis(df['Date'], inplace=True)
     close_data = df['Close'].values
     close_data = close_data.reshape((-1, 1))
-    info = yfinance.Ticker(stock_name)
+    info = yf.Ticker(stock_name)
     return df, close_data, info
 
 
@@ -79,15 +78,12 @@ def split_data(close_data, df):
 
 
 def sequence_to_supervised(look_back, close_train, close_test):
-    from keras.preprocessing.sequence import TimeseriesGenerator
     train_generator = TimeseriesGenerator(close_train, close_train, length=look_back, batch_size=20)
     test_generator = TimeseriesGenerator(close_test, close_test, length=look_back, batch_size=1)
     return train_generator, test_generator
 
 
 def train_model(look_back, train_generator, epochs):
-    from keras.models import Sequential
-    from keras.layers import LSTM, Dense
     lstm_model = Sequential()
     lstm_model.add(
         LSTM(10,
@@ -102,7 +98,6 @@ def train_model(look_back, train_generator, epochs):
 
 
 def plot_train_test_graph(stock, model, test_generator, close_train, close_test, date_train, date_test):
-    from plotly import graph_objs as go
     prediction = model.predict_generator(test_generator)
     close_train = close_train.reshape((-1))
     close_test = close_test.reshape((-1))
@@ -132,7 +127,6 @@ def plot_train_test_graph(stock, model, test_generator, close_train, close_test,
         yaxis={'title': "Close"}
     )
     figure = go.Figure(data=[trace1, trace2, trace3], layout=layout)
-    from sklearn.metrics import r2_score
     score = r2_score(close_test[:-15], prediction)
     figure.update_layout(
         paper_bgcolor=colors['background'],
@@ -169,7 +163,6 @@ def predicting(close_data, model, look_back, df):
 
 
 def plot_future_prediction(model, test_generator, close_train, close_test, df, forecast_dates, forecast):
-    from plotly import graph_objs as go
     prediction = model.predict_generator(test_generator)
     close_train = close_train.reshape((-1))
     close_test = close_test.reshape((-1))
@@ -220,8 +213,6 @@ app = dash.Dash(
     title="Predikter",
     update_title='Predicting ...')
 server = app.server
-# df,close_data =download_and_process_data('RELIANCE.NS')
-
 
 app.layout = html.Div([
     html.H1('Predikter', style={"textAlign": "center", "margin_top": "8px"}),
@@ -339,9 +330,6 @@ def update_graph(value):
     except:
         empty = return_empty_graph()
         return empty, empty, "No R2 Score to display", "No Asset Queried or Selected"
-
-
-# fig.show()
 
 
 if __name__ == '__main__':
