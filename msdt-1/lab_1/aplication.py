@@ -40,12 +40,14 @@ colors = {
     'background': '#111111',
     'text': '#7FDBFF'
 }
+
 tab_selected_style = {
     'borderTop': '1px solid #111111',
     'borderBottom': '1px solid #111111',
     'backgroundColor': 'hotpink',
     'color': '#111111',
 }
+
 tab_style = {
     'fontWeight': 'bold',
     'backgroundColor': '#111111',
@@ -340,6 +342,7 @@ def update_graph(value):
 
 
 # fig.show()
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
