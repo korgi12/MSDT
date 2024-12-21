@@ -160,7 +160,7 @@ def predict_dates(num_prediction, df):
     last_date = df["Date"].values[-1]
     prediction_dates = pd.date_range(
         last_date,
-        periods=num_prediction+1
+        periods=num_prediction + 1
     ).tolist()
     return prediction_dates
 
@@ -255,8 +255,7 @@ app.layout = html.Div([
                     html.Li("Lookbacks : 15"),
                     html.Li("Epochs : 25"),
                     html.Li("Forecast Duration : 1 Month")
-                ]
-                )
+                ])
             ], style={"height": "100vh", "padding": "20px"})
         ], style=tab_style, selected_style=tab_selected_style),
         dcc.Tab(label="See the model in Action", children=[
@@ -351,13 +350,13 @@ def update_graph(value):
     except:
         empty = return_empty_graph()
         return empty, empty, "No R2 Score to display", "No Asset Queried or Selected"
+
     try:
         close_train, close_test, date_train, date_test = split_data(close_data, df)
         train_generator, test_generator = sequence_to_supervised(15,
                                                                  close_train,
                                                                  close_test)
         lstm_model = train_model(15, train_generator, 25)
-        # lstm_model.save("lstm_model.h5")
         figure_1, r2_score_s = plot_train_test_graph(stock, lstm_model,
                                                      test_generator, close_train,
                                                      close_test, date_train, date_test)
