@@ -1,8 +1,12 @@
 import os
 import random
+import logging
 from typing import List
-
 from .controls import Controls
+
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class Game2048:
@@ -10,6 +14,7 @@ class Game2048:
         """Инициализация игры 2048 и создание начальной игровой доски."""
         self.board: List[List[int]] = self.init_game()
         self.controls = Controls()  # Инициализация управления
+        logging.info("Игра 2048 начата. Начальная доска:\n%s", self.board)
 
     def init_game(self) -> List[List[int]]:
         """
@@ -34,6 +39,7 @@ class Game2048:
         while board[x][y] != 0:
             x, y = random.randint(0, 3), random.randint(0, 3)
         board[x][y] = random.choice([2, 4])
+        logging.info("Добавлена новая плитка %d на позицию (%d, %d)", board[x][y], x, y)
 
     def print_board(self) -> None:
         """Вывод игровой доски на экран."""
@@ -63,6 +69,7 @@ class Game2048:
             if i < len(new_row) - 1 and new_row[i] == new_row[i + 1]:
                 merged_row.append(new_row[i] * 2)
                 skip = True
+                logging.info("Объединены плитки %d и %d в %d", new_row[i], new_row[i], new_row[i] * 2)
             else:
                 merged_row.append(new_row[i])
 
@@ -97,6 +104,7 @@ class Game2048:
         if direction in ("w", "s"):
             new_board = [list(row) for row in zip(*new_board)]  # Транспонируем обратно
 
+        logging.info("Доска после движения %s:\n%s", direction, new_board)
         return new_board
 
     def is_game_over(self) -> bool:
@@ -109,6 +117,7 @@ class Game2048:
         for row in self.board:
             if 2048 in row:
                 print("Поздравляем! Вы выиграли!")
+                logging.info("Игрок выиграл, достигнув 2048.")
                 return True
             if 0 in row:
                 return False
@@ -118,6 +127,7 @@ class Game2048:
                         self.board[j][i] == self.board[j + 1][i]):
                     return False
         print("Игра окончена! Попробуйте еще раз.")
+        logging.info("Игра окончена, игрок проиграл.")
         return True
 
     def play(self) -> None:
@@ -136,9 +146,11 @@ class Game2048:
                     break
             elif move_input == "q":
                 print("Вы вышли из игры.")
+                logging.info("Игрок вышел из игры.")
                 break
             else:
                 print("Неверный ввод! Пожалуйста, используйте w/a/s/d или q.")
+                logging.warning("Пользователь ввел неверное направление: %s", move_input)
 
 
 def game_2048() -> None:
