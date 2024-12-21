@@ -68,7 +68,7 @@ def download_and_process_data(stock_name):
 
 
 def split_data(close_data, df):
-    split_percent = 80 / 100
+    split_percent = 80/100
     split = int(split_percent * len(close_data))
     close_train = close_data[:split]
     close_test = close_data[split:]
@@ -88,8 +88,7 @@ def train_model(look_back, train_generator, epochs):
     lstm_model.add(
         LSTM(10,
              activation='relu',
-             input_shape=(look_back, 1))
-    )
+             input_shape=(look_back, 1)))
     lstm_model.add(Dense(1))
     lstm_model.compile(optimizer='adam', loss='mse')
     lstm_model.fit_generator(train_generator, epochs=epochs)
@@ -127,7 +126,7 @@ def plot_train_test_graph(stock, model, test_generator, close_train, close_test,
         yaxis={'title': "Close"}
     )
     figure = go.Figure(data=[trace1, trace2, trace3], layout=layout)
-    score = r2_score(close_test[:-15], prediction)
+    score = r2_score(close_test[:-15],prediction)
     figure.update_layout(
         paper_bgcolor=colors['background'],
         plot_bgcolor=colors["background"],
@@ -143,14 +142,14 @@ def predict(num_prediction, model, close_data, look_back):
         x = x.reshape((1, look_back, 1))
         out = model.predict(x)[0][0]
         prediction_list = np.append(prediction_list, out)
-    prediction_list = prediction_list[look_back - 1:]
+    prediction_list = prediction_list[look_back-1:]
 
     return prediction_list
 
 
 def predict_dates(num_prediction, df):
     last_date = df['Date'].values[-1]
-    prediction_dates = pd.date_range(last_date, periods=num_prediction + 1).tolist()
+    prediction_dates = pd.date_range(last_date, periods=num_prediction+1).tolist()
     return prediction_dates
 
 
@@ -214,15 +213,14 @@ app = dash.Dash(
     update_title='Predicting ...')
 server = app.server
 
+
 app.layout = html.Div([
     html.H1('Predikter', style={"textAlign": "center", "margin_top": "8px"}),
     html.H2('Created By - Rishabh Panesar', style={"textAlign": "center", "margin_top": "8px"}),
     dcc.Tabs(id="tabs", children=[
         dcc.Tab(label="Some Basic Information", children=[
             html.Div([
-                html.P(
-                    "This project is made just for educational purpose. All the predictions made by the Machine Learning Model are entirely probablistic based.",
-                    style={"textAlign": "center"}),
+                html.P("This project is made just for educational purpose. All the predictions made by the Machine Learning Model are entirely probablistic based.", style={"textAlign": "center"}),
                 html.H2("How to use?", style={"textAlign": "center"}),
                 html.Ol(children=[
                     html.Li("Web app only takes the TICKER name of the desired asset"),
@@ -260,10 +258,8 @@ app.layout = html.Div([
             ]),
             html.Div([
                 html.H1('Stock Info Section', style={'textAlign': 'center'}),
-                html.Div(id='stock_info',
-                         style={"color": "#f5f5f5", "text-align": "justify", "text-justify": "inter-word",
-                                "padding": "32px", "marginLeft": "16px", "marginRight": "16px"}),
-            ]),
+                html.Div(id='stock_info', style={"color": "#f5f5f5", "text-align": "justify", "text-justify": "inter-word", "padding": "32px", "marginLeft": "16px", "marginRight": "16px"}),
+                ]),
             html.H1('Future Price Prediction', style={'textAlign': 'center', "margin": "0px"}),
             html.Div([
                 dcc.Graph(id='future_plot')
@@ -275,29 +271,29 @@ app.layout = html.Div([
 
 def return_empty_graph():
     empty = {
-        "layout": {
-            "xaxis": {
-                "visible": False
-            },
-            "yaxis": {
-                "visible": False
-            },
-            "annotations": [
-                {
-                    "text": "No matching data found\nOr\nYou entered incorrect stock name...",
-                    "xref": "paper",
-                    "yref": "paper",
-                    "showarrow": False,
-                    "font": {
-                        "size": 28
+            "layout": {
+                "xaxis": {
+                    "visible": False
+                    },
+                "yaxis": {
+                    "visible": False
+                    },
+                "annotations": [
+                    {
+                        "text": "No matching data found\nOr\nYou entered incorrect stock name...",
+                        "xref": "paper",
+                        "yref": "paper",
+                        "showarrow": False,
+                        "font": {
+                            "size": 28
+                        }
                     }
+                    ],
+                'plot_bgcolor': colors['background'],
+                "paper_bgcolor": "#111111",
+                "font_color": colors["text"]
                 }
-            ],
-            'plot_bgcolor': colors['background'],
-            "paper_bgcolor": "#111111",
-            "font_color": colors["text"]
-        }
-    }
+            }
     return empty
 
 
@@ -307,7 +303,7 @@ def return_empty_graph():
      dash.dependencies.Output('r2_score', 'children')],
     dash.dependencies.Output('stock_info', 'children'),
     dash.dependencies.Input('stock_name', 'value'),
-)
+    )
 def update_graph(value):
     try:
         stock = value
@@ -320,11 +316,9 @@ def update_graph(value):
         train_generator, test_generator = sequence_to_supervised(15, close_train, close_test)
         lstm_model = train_model(15, train_generator, 25)
         # lstm_model.save('lstm_model.h5')
-        figure_1, r2_score = plot_train_test_graph(stock, lstm_model, test_generator, close_train, close_test,
-                                                   date_train, date_test)
+        figure_1, r2_score = plot_train_test_graph(stock, lstm_model, test_generator, close_train, close_test, date_train, date_test)
         close_data, forecast, forecast_dates = predicting(close_data, lstm_model, 15, df)
-        figure_2 = plot_future_prediction(lstm_model, test_generator, close_train, close_test, df, forecast_dates,
-                                          forecast)
+        figure_2 = plot_future_prediction(lstm_model, test_generator, close_train, close_test, df, forecast_dates, forecast)
         r2_score = "R2 Score : {}".format(r2_score)
         return figure_1, figure_2, r2_score, info.info['longBusinessSummary']
     except:
