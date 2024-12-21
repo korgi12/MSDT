@@ -1,5 +1,14 @@
 import importlib
+import logging
 from typing import Dict
+
+
+# Настройка логирования для записи в файл
+logging.basicConfig(
+    filename='game_launcher.log',  # Имя файла для логов
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'  # Исправлено здесь
+)
 
 
 class GameLauncher:
@@ -24,6 +33,7 @@ class GameLauncher:
 
     def display_games(self) -> None:
         """Отображение доступных игр."""
+        logging.info("Отображение доступных игр.")
         print("Доступные игры:")
         for game in self.games.keys():
             print(f"- {game}")
@@ -35,21 +45,30 @@ class GameLauncher:
         Args:
             selected_game (str): Название выбранной игры.
         """
+        logging.info(f"Попытка запустить игру: {selected_game}")
         game_module_name = self.games.get(selected_game)
 
         if game_module_name:
-            game_module = importlib.import_module(game_module_name)
-            function_name = self.game_functions.get(selected_game)
-            if function_name:
-                game_module_function = getattr(game_module, function_name)
-                game_module_function()
-            else:
-                print("Извините, функция игры не найдена.")
+            try:
+                game_module = importlib.import_module(game_module_name)
+                function_name = self.game_functions.get(selected_game)
+                if function_name:
+                    game_module_function = getattr(game_module, function_name)
+                    game_module_function()
+                    logging.info(f"Игра '{selected_game}' успешно запущена.")
+                else:
+                    logging.error("Функция игры не найдена.")
+                    print("Извините, функция игры не найдена.")
+            except ImportError as e:
+                logging.error(f"Ошибка импорта модуля: {e}")
+                print("Извините, произошла ошибка при запуске игры.")
         else:
+            logging.warning("Попытка запустить несуществующую игру.")
             print("Извините, такой игры нет. Пожалуйста, выберите из списка.")
 
     def run(self) -> None:
         """Основной игровой процесс."""
+        logging.info("Запуск игрового лаунчера.")
         while True:
             self.display_games()
             selected_game = input(
@@ -57,6 +76,7 @@ class GameLauncher:
             )
 
             if selected_game.lower() == "выход":
+                logging.info("Пользователь завершил игру.")
                 print("Спасибо за игру! До свидания!")
                 break
 
