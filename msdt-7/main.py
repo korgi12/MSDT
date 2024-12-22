@@ -1,4 +1,5 @@
 import aiohttp
+import re
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ContentType, ReplyKeyboardMarkup, KeyboardButton
@@ -49,14 +50,14 @@ async def get_forecast(city_name):
             if response.status == 200:
                 data = await response.json()
                 forecast_list = []
-                for forecast in data.get("list", [])[:5]:  # 5 ближайших прогнозов
+                for forecast in data.get("list", [])[:10]:  # 10 ближайших прогнозов
                     dt = forecast.get("dt_txt", "Неизвестно")
                     temp = forecast.get("main", {}).get("temp", "Неизвестно")
                     weather = forecast.get("weather", [{}])[0].get("description", "Неизвестно")
                     forecast_list.append(f"{dt}: {weather.capitalize()}, {temp}°C")
                 return "\n".join(forecast_list)
             else:
-                return f"Не удалось получить данные о прогнозе в {city_name}."
+                return "Не удалось получить данные о прогнозе."
 
 # Клавиатура с быстрыми действиями
 weather_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -86,21 +87,21 @@ async def handle_location(message: types.Message):
 async def handle_text(message: types.Message):
     user_input = message.text.strip().lower()
 
+    # Регулярное выражение для извлечения команды "прогноз <город>"
+    forecast_match = re.match(r"прогноз\s+(.+)", user_input, re.IGNORECASE)
+
     if user_input == "узнать погоду по городу":
         await message.reply("Введите название города, чтобы узнать погоду.")
     elif user_input == "прогноз на 5 дней":
         await message.reply("Введите название города для получения прогноза на 5 дней.")
+    elif forecast_match:
+        city_name = forecast_match.group(1).strip()
+        forecast_info = await get_forecast(city_name)
+        await message.reply(forecast_info)
     else:
         city_name = message.text.strip()
-        if len(city_name) > 0:
-            if "прогноз" in user_input:
-                forecast_info = await get_forecast(city_name)
-                await message.reply(forecast_info)
-            else:
-                weather_info = await get_weather(city_name=city_name)
-                await message.reply(weather_info)
-        else:
-            await message.reply("Я не понимаю ваш запрос. Попробуйте снова.")
+        weather_info = await get_weather(city_name=city_name)
+        await message.reply(weather_info)
 
 # Обработчик всех остальных сообщений
 @dp.message_handler()
