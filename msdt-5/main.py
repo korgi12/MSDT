@@ -1,271 +1,122 @@
-import csv
-import os
-from tempfile import NamedTemporaryFile
-
-from tabulate import tabulate
+from datetime import datetime
+from typing import List, Optional
 
 
-def logo():
-    print("""
-                    ==================================
-                        EMPLOYEE MANAGEMENT SYSTEM
-                    ==================================
-""")
+class Product:
+    def __init__(self, name: str, price: float, category: str, stock: int):
+        self.name = name
+        self.price = price
+        self.category = category
+        self.stock = stock
+
+    def reduce_stock(self, quantity: int):
+        if quantity > self.stock:
+            raise ValueError(f"Not enough stock for {self.name}. Available: {self.stock}")
+        self.stock -= quantity
+
+    def __repr__(self):
+        return f"Product(name={self.name}, price={self.price}, category={self.category}, stock={self.stock})"
 
 
-def login_menu():
-    os.system("cls")
-    while True:
-        try:
-            logo()
-            print("""
-                     ********* LOGIN MENU **********
-                     _______________________________
-                    |                               |
-                    |_______ 1) Login ______________|
-                    |                               |
-                    |_______ 2) Exit _______________|
-                    |                               |
-                    |_______________________________|
-            """)
-            choice0 = int(input("\n\n\t\t\tSelect any option: "))
-            if choice0 == 1:
-                login()
-                break
-            elif choice0 == 2:
-                os._exit(0)
-            else:
-                print("\n\n\t\t\tInvalid Input! Please Try Again.\n\n")
-                os.system("pause")
-                login_menu()
-        except ValueError:
-            print("\n\n\t\t\tInvalid Input! Please Try Again.\n\n")
-            os.system("pause")
-            login_menu()
+class CartItem:
+    def __init__(self, product: Product, quantity: int):
+        if quantity < 1:
+            raise ValueError("Quantity must be at least 1")
+        self.product = product
+        self.quantity = quantity
+
+    @property
+    def total_price(self):
+        return self.product.price * self.quantity
+
+    def __repr__(self):
+        return f"CartItem(product={self.product}, quantity={self.quantity})"
 
 
-def menu():
-    os.system("cls")
-    while True:
-        try:
-            print(
-                """
-                    *********** MAIN MENU ************
-                     ________________________________
-                    |                                |
-                    |____ 1) View Employees List ____|
-                    |                                |
-                    |____ 2) Edit Employees List ____|
-                    |                                |
-                    |____ 3) Search Record __________|
-                    |                                |
-                    |____ 4) Exit __________________ |
-                    |                                |
-                    |________________________________|
-                """)
-            choice1 = int(input("\n\n\t\t\tEnter your choice: "))
-            if choice1 == 1:
-                display()
-                os.system("pause")
-                menu()
-                break
-            elif choice1 == 2:
-                edit()
-                break
-            elif choice1 == 3:
-                os.system("cls")
-                search()
-                break
-            elif choice1 == 4:
-                return login_menu()
-            else:
-                print("\n\n\t\t\tInvalid Input! Please Try Again.\n\n")
-                os.system("pause")
-                menu()
-        except ValueError:
-            print("\n\n\t\t\tInvalid Input! Please Try Again.\n\n")
-            os.system("pause")
-            menu()
+class ShoppingCart:
+    def __init__(self):
+        self.items: List[CartItem] = []
+        self.logs: List[str] = []
+
+    def add_item(self, product: Product, quantity: int):
+        if product.stock < quantity:
+            raise ValueError(f"Not enough stock for {product.name}. Available: {product.stock}")
+
+        for item in self.items:
+            if item.product == product:
+                item.quantity += quantity
+                product.reduce_stock(quantity)
+                self.logs.append(f"Updated quantity for {product.name} to {item.quantity}")
+                return
+        product.reduce_stock(quantity)
+        self.items.append(CartItem(product, quantity))
+        self.logs.append(f"Added {quantity} of {product.name} to the cart")
+
+    def update_quantity(self, product: Product, quantity: int):
+        if quantity < 1:
+            raise ValueError("Quantity must be at least 1")
+        for item in self.items:
+            if item.product == product:
+                diff = quantity - item.quantity
+                if diff > 0:
+                    product.reduce_stock(diff)
+                item.quantity = quantity
+                self.logs.append(f"Updated quantity for {product.name} to {quantity}")
+                return
+        raise ValueError(f"Product {product.name} not found in cart")
+
+    def remove_item(self, product: Product):
+        self.items = [item for item in self.items if item.product != product]
+        self.logs.append(f"Removed {product.name} from the cart")
+
+    def calculate_total(self):
+        return sum(item.total_price for item in self.items)
+
+    def clear_cart(self):
+        self.items = []
+        self.logs.append("Cleared the cart")
+
+    def print_logs(self):
+        for log in self.logs:
+            print(log)
+
+    def __repr__(self):
+        return f"ShoppingCart(items={self.items})"
 
 
-def display():
-    os.system("cls")
-    try:
-        with open('employees.csv', 'r') as file:
-            array = file.readlines()
-            array = [row.split(',') for row in array]
-            print(tabulate(array, headers="firstrow", tablefmt='fancy_grid'))
-    except FileNotFoundError:
-        print("\nFile Not Found!!")
+class Coupon:
+    def __init__(self, code: str, discount: float, expiry_date: datetime):
+        self.code = code
+        self.discount = discount
+        self.expiry_date = expiry_date
+
+    def is_valid(self):
+        return datetime.now() <= self.expiry_date
+
+    def apply_discount(self, total: float):
+        if not self.is_valid():
+            raise ValueError("Coupon is expired")
+        return total * (1 - self.discount)
+
+    def __repr__(self):
+        return f"Coupon(code={self.code}, discount={self.discount}, expiry_date={self.expiry_date})"
 
 
-def edit():
-    os.system("cls")
-    while True:
-        try:
-            print("""
-                    **** EDIT EMPLOYEE LIST ****
-                     __________________________
-                    |                          |
-                    |______ 1) Add ____________|
-                    |                          |
-                    |______ 2) Modify _________|
-                    |                          |
-                    |______ 3) Remove _________|
-                    |                          |
-                    |______ 4) Main Menu ______|
-                    |                          |
-                    |__________________________|
-            """)
-            choice2 = int(input("\n\n\t\t\tSelect any option: "))
-            if choice2 == 1:
-                add()
-                break
-            elif choice2 == 2:
-                modify()
-                break
-            elif choice2 == 3:
-                remove()
-                break
-            elif choice2 == 4:
-                return menu()
-            else:
-                print("\n\n\t\t\tInvalid Input! Please Try Again.\n\n")
-                os.system("pause")
-                edit()
-        except ValueError:
-            print("\n\n\t\t\tInvalid Input! Please Try Again.\n\n")
-            os.system("pause")
-            edit()
+class Order:
+    def __init__(self, cart: ShoppingCart, discount: float = 0.0, coupon: Optional[Coupon] = None):
+        if not (0.0 <= discount <= 1.0):
+            raise ValueError("Discount must be between 0.0 and 1.0")
+        self.cart = cart
+        self.discount = discount
+        self.coupon = coupon
+        self.order_date = datetime.now()
+        self.total = self.calculate_final_total()
 
+    def calculate_final_total(self):
+        total = self.cart.calculate_total() * (1 - self.discount)
+        if self.coupon:
+            total = self.coupon.apply_discount(total)
+        return total
 
-def add():
-    os.system("cls")
-    try:
-        file = open("employees.csv", "r")
-        file.close()
-    except FileNotFoundError:
-        header = ['Employee ID', 'First Name', 'Last Name', 'Age', 'Salary', 'Phone NO', 'Address']
-        with open('employees.csv', 'w', newline="") as file:
-            csvwriter = csv.writer(file)
-            csvwriter.writerow(header)
-    print("\n\t\t *** Add Employee Details ***\n")
-    empId = input("\n\t\tEmployee ID: ")
-    with open("employees.csv", "r") as csvfile:
-        csvreader = csv.DictReader(csvfile)
-        for row in csvreader:
-            if row["Employee ID"] == empId:
-                print("\n\t\tThis Employee ID already in use!\n")
-                os.system("pause")
-                edit()
-        else:
-            with open("employees.csv", "a", newline="") as file:
-                w = csv.writer(file)
-                ans = 'Y'
-                while ans.lower() == 'y':
-                    fName = input("\n\t\tFirst Name: ")
-                    lName = input("\n\t\tLast Name: ")
-                    age = input("\n\t\tAge: ")
-                    salary = input("\n\t\tSalary: ")
-                    phoneNo = input("\n\t\tPhone NO: ")
-                    address = input("\n\t\tAddress: ")
-                    w.writerow([empId, fName, lName, age, salary, phoneNo, address])
-                    print("\n\t\tRecord Added!!")
-                    ans = input("\nDo you want add more employee?\nEnter[Y/N]: ")
-    os.system("cls")
-    edit()
-
-
-def modify():
-    os.system("cls")
-    display()
-    tempfile = NamedTemporaryFile(mode='w', delete=False)
-    fields = ['Employee ID', 'First Name', 'Last Name', 'Age', 'Salary', 'Phone NO', 'Address']
-    with open("employees.csv", 'r') as csvfile, tempfile:
-        reader = csv.DictReader(csvfile, fieldnames=fields)
-        writer = csv.DictWriter(tempfile, fieldnames=fields)
-        emp_id = input("\n\tEnter Employee ID: ")
-        for row in reader:
-            if row['Employee ID'] == str(emp_id):
-                os.system("cls")
-                print("\n\t\t *** Enter New Details for Employee ID:", row['Employee ID'], "***")
-                fName = input("\n\t\tFirst Name: ")
-                lName = input("\n\t\tLast Name: ")
-                age = input("\n\t\tAge: ")
-                salary = input("\n\t\tSalary: ")
-                phoneNo = input("\n\t\tPhone NO: ")
-                address = input("\n\t\tAddress: ")
-                row['First Name'], row['Last Name'], row['Age'], row['Salary'], row['Phone NO'], row[
-                    'Address'] = fName, lName, age, salary, phoneNo, address
-            row = {'Employee ID': row['Employee ID'], 'First Name': row['First Name'], 'Last Name': row['Last Name'],
-                   'Age': row['Age'], 'Salary': row['Salary'], 'Phone NO': row['Phone NO'], 'Address': row['Address']}
-            writer.writerow(row)
-    with open(tempfile.name, newline='') as in_file:
-        with open("employees.csv", 'w', newline='') as out_file:
-            writer = csv.writer(out_file)
-            for row in csv.reader(in_file):
-                if row:
-                    writer.writerow(row)
-    print("\n\t\tRecord Updated!!\n\n")
-    os.system("pause")
-    edit()
-
-
-def remove():
-    os.system("cls")
-    display()
-    tempfile = NamedTemporaryFile(mode='w', delete=False)
-    fields = ['Employee ID', 'First Name', 'Last Name', 'Age', 'Salary', 'Phone NO', 'Address']
-    with open("employees.csv", 'r') as csvfile, tempfile:
-        reader = csv.DictReader(csvfile, fieldnames=fields)
-        writer = csv.DictWriter(tempfile, fieldnames=fields)
-        emp_id = input("\n\tEnter Employee ID: ")
-        for row in reader:
-            if row['Employee ID'] != str(emp_id):
-                writer.writerow(row)
-    with open(tempfile.name, newline='') as in_file:
-        with open("employees.csv", 'w', newline='') as out_file:
-            writer = csv.writer(out_file)
-            for row in csv.reader(in_file):
-                if row:
-                    writer.writerow(row)
-    print("\n\tRecord Removed!!\n\n")
-    os.system("pause")
-    edit()
-
-
-def search():
-    print("\n*** Search Record in Employees List ***\n")
-    keyword = input("Enter any detail of the employee to search: ")
-    fields = ['Employee ID', 'First Name', 'Last Name', 'Age', 'Salary', 'Phone NO', 'Address']
-    with open("employees.csv", 'r') as csvfile:
-        reader = csv.DictReader(csvfile, fieldnames=fields)
-        for row in reader:
-            if row['Employee ID'] == str(keyword) or row['First Name'] == str(keyword) or row['Last Name'] == str(
-                    keyword) or row['Age'] == str(keyword) or row['Salary'] == str(keyword) or row['Phone NO'] == str(
-                    keyword) or row['Address'] == str(keyword):
-                print("\n")
-                print(tabulate(row.items(), headers="firstrow", tablefmt='fancy_grid'))
-    print("\n\n")
-    os.system("pause")
-    menu()
-
-
-def login():
-    password = "urssanjaysingh"
-    while True:
-        passw = input("\n\n\t\t\tEnter the password to login: ")
-        if passw == password:
-            menu()
-        else:
-            print("\n\n\t\t\tWrong Password! Please Try Again.\n\n");
-            os.system("pause")
-            login_menu()
-
-
-def main():
-    os.system("cls")
-    login_menu()
-
-
-main()
+    def __repr__(self):
+        return f"Order(total={self.total}, date={self.order_date}, coupon={self.coupon})"
